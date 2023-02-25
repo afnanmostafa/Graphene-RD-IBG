@@ -1,0 +1,75 @@
+#Interlayer bonded Bilayer Graphene with random isolated bonds + passivation by H
+
+dimension 3
+units metal
+processors * 1 1
+boundary p p p
+neighbor 0.3 bin
+neigh_modify every 1 delay 0 check yes
+#define variables
+
+variable T equal 300.0
+variable V equal lx*ly*6.7  # 3.35 (1st layer) + gap (0) + 3.35 (2nd layer)
+variable dt equal 0.0001
+#define lattice
+
+atom_style atomic
+read_data gr10x10ab_5.00BD.data
+#define interatomic potentials
+
+pair_style			airebo 3 1 0
+pair_coeff 			* * CH.airebo C C H
+dump 1 all xyz 1000 bondnew.xyz
+dump_modify 1 sort id
+#define thermo variable settings
+
+timestep ${dt}
+
+#### BOND FORMATION ####
+
+group atom1 id 	3221 3883 959 2225 3381 3243 3629 2277 3849 1387 1973 2577 1271 2923 3743 3943 1217 1143 3255 1671 1895 3007 3603 1167 2283 239 1297 115 1357 1491 727 3989 199 1603 3809 967 3139 525 3953 1293 889 3641 1551 3661 1097 3653 2991 1787 2315 489 281 2155 2047 3507 1183 3273 3559 3113 3355 175 3417 1885 1867 2925 1145 1719 2505 3097 399 3847 3155 2053 1785 1821 1439 3201 1447 3965 1033 955 1777 3335 3821 613 3573 1793 3281 3183 447 1485 3091 3747 3857 279 
+
+group atom2 id 	7088 7914 4990 6092 7248 7274 7496 6144 7716 5418 5840 6444 5302 6954 7774 7974 5084 5174 7286 5702 5926 7038 7634 5198 6314 4270 5164 4146 5224 5522 4758 7856 4230 5634 7676 4998 7170 4392 7820 5160 4756 7508 5582 7528 4964 7520 7022 5818 6346 4356 4148 6186 6078 7538 5214 7140 7590 6980 7386 4206 7284 5752 5898 6792 5012 5750 6372 6964 4430 7878 7186 5920 5652 5688 5470 7068 5478 7832 4900 4986 5644 7366 7688 4480 7440 5660 7148 7214 4478 5352 7122 7778 7724 4310 
+
+displace_atoms atom1 move 0 0 1.15 units box
+displace_atoms atom2 move 0 0 -1.15 units box
+
+# ======= grouping bonded and non-bonded atoms ======= #
+
+group bonded union atom1 atom2
+group nonbonded subtract all bonded
+
+# ======= thermodynamics output setting ======= #
+
+thermo_style    	custom step time temp press pxx pyy pzz pe ke etotal
+thermo          	1000
+
+# ======= minimization ======= #
+
+min_style		cg
+fix 			1 all box/relax x 0.0 y 0.0 z 0.0 couple xyz
+minimize		0 1e-10 200000 400000
+unfix			1
+
+# ======= equilibration ======= #
+
+fix 2 all recenter INIT INIT INIT
+
+fix 1 nonbonded npt temp $T $T 0.1 x 0.0 0.0 1.0 y 0.0 0.0 1.0 couple xy
+run 50000
+unfix 1
+
+fix 1 all npt temp $T $T 0.1 x 0.0 0.0 1.0 y 0.0 0.0 1.0 couple xy
+run 50000
+unfix 1
+unfix 2
+
+fix NVE all nve
+fix				ts all temp/rescale 1 $T $T $(100.0*dt) 1.0
+run 50000
+unfix     ts
+unfix     NVE
+
+# ======= write output ======= #
+
+write_data post_equil.data
