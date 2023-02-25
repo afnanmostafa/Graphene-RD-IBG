@@ -12,14 +12,10 @@ rng('shuffle');
 
 bond_density = 30;
 % bond_density = [1.25,2.50,3.75,5.00,6.25,7.50,8.75,10.00,11.25,12.50,13.75,15.00,16.25,17.50,18.75,20.00,25.00,30.00,35.00,40.00,45.00]; % (in %)
-directory = uigetdir();
-files = dir(directory);
 
 for gg = 1:length(bond_density)
     [file,outputfile,rand_bot_atoms,rand_top_atoms,len,wid,stacking] = ibbgwH_generator(bond_density(gg));
 end
-directory = uigetdir();
-files = dir(directory);
 
 
 for wp = 1:length(bond_density)
