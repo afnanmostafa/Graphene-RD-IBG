@@ -7,23 +7,25 @@ repo for randomly-distributed interlayer-bonded bilayer graphene
 
 example 			= 	directory for example data files generated for LAMMPS
 
-mainscript.m 			= 	main MATLAB script
+src 				=	source file directory that contains the following functions and scripts:
 
-generate_graphene.m 	= 	(function) generates graphene sheets (can also generate multi-layer graphene, i.e. 100 layers)
+	mainscript.m 			= 	main MATLAB script
 
-readtextfile.m 		= 	(function) reads a file to get spatial information of atoms
+	generate_graphene.m 	= 	(function) generates graphene sheets (can also generate multi-layer graphene, i.e. 100 layers)
 
-get_aligned_atoms.m 	= 	(function) gets aligned atoms from top and bottom layers
+	readtextfile.m 		= 	(function) reads a file to get spatial information of atoms
 
-gen_rand_bot.m 		= 	(function) selects random bonds from aligned atoms
+	get_aligned_atoms.m 	= 	(function) gets aligned atoms from top and bottom layers
 
-get_hydro.m 			= 	(function) gets coordinates of H for passivating interlayer bond-forming C atoms
+	gen_rand_bot.m 		= 	(function) selects random bonds from aligned atoms
 
-write_equil_lmps.m 		= 	(function) writes LAMMPS input script for generating interlayer bonds
+	get_hydro.m 			= 	(function) gets coordinates of H for passivating interlayer bond-forming C atoms
 
-write_hydro_lmps.m 		= 	(function) writes the information of all passivating H
+	write_equil_lmps.m 		= 	(function) writes LAMMPS input script for generating interlayer bonds
 
-delete_overlap_atoms.m 	= 	(function) delets overlapping atoms
+	write_hydro_lmps.m 		= 	(function) writes the information of all passivating H
+
+	delete_overlap_atoms.m 	= 	(function) delets overlapping atoms
 
 please contact/pull if you find any bugs or improvements.
 afnanmostafa102@gmail.com
