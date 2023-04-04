@@ -5,12 +5,13 @@
 %% %%% Section 1: clear variables %%% %%
 clear
 clc
-close all
+close
 rng('shuffle');
+
 
 %% %%% Section 2: Reading the data file and storing spatial coordinate values %%% %%
 
-bond_density = 30;
+bond_density = 5;
 % bond_density = [1.25,2.50,3.75,5.00,6.25,7.50,8.75,10.00,11.25,12.50,13.75,15.00,16.25,17.50,18.75,20.00,25.00,30.00,35.00,40.00,45.00]; % (in %)
 
 for gg = 1:length(bond_density)
@@ -26,7 +27,7 @@ end
 
 function [file,outputfile,rand_bot_atoms,rand_top_atoms,len,wid,stacking] = ibbgwH_generator(bond_density)
 
-[file,len,wid,stacking] = generate_graphene(100,5,'aa',2);
+[file,len,wid,stacking] = generate_graphene(10,10,'ab',2);
 lmp_input = sprintf('in%.2fbd.lmp',bond_density);
 inputfile = file;
 hydrogenfile = 'gh.data';
@@ -47,9 +48,37 @@ y_top = y(length(y)/2+1:end);
 z_bot = z(1:length(z)/2);
 z_top = z(length(z)/2+1:end);
 
+edge_cases = 0;
+
 [bot_align_atoms,top_align_atoms] = get_aligned_atoms(index,x,y,stacking);
 
 %% %%% Section 2.1: random bonds' selection depending on bonding density %%% %%
+%% bond density calculation
+bonding_density_in_fraction = bond_density/100;
+random_C_atoms = round(length(atom_type)*bonding_density_in_fraction);
+
+%% edge case 1
+if edge_cases == 1
+    if length(bot_align_atoms)*2 < random_C_atoms
+        error('fix your int_bond_density; lower it slightly unless random_C_atoms => length(bot_align_atoms');
+    else
+    end
+end
+
+%% check: max aligned atoms not less than randonly selected C atoms
+max_align_atoms = length(bot_align_atoms)*2;
+if max_align_atoms < random_C_atoms
+    old_rand = random_C_atoms;
+    difference = abs(random_C_atoms - max_align_atoms);
+    random_C_atoms = random_C_atoms - difference;
+    maxBD = (random_C_atoms/length(atom_type))*100;
+    userBD = bond_density;
+    BD_change = userBD - maxBD;
+    fprintf(2,'MAX C atoms for interlayer bonding is: %d; \nreducing random_C_atoms (current: %d) to match this number for this specific structure\n',max_align_atoms,old_rand);
+    fprintf(2,'Max BD: %0.4f%%, User input = %.4f%%, diff = %.4f%%\n',maxBD,userBD,BD_change);
+else
+    % do nothing or remove the "else"
+end
 
 [indx_rand] = gen_rand_bot(bot_align_atoms,bond_density);
 rand_bot_atoms = bot_align_atoms(indx_rand(1:end));
