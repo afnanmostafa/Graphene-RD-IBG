@@ -1,4 +1,4 @@
-function [filename,len,wid,stacking] = generate_graphene(len,wid,stacking,layers)
+function [file,len,wid,stacking,layers] = generate_graphene(len,wid,stacking,layers)
 %   creates single/multi-layer graphene
 %   This code generates aa- or ab- stacked
 %   graphene. input = length (nm), width (nm), stacking (ab or aa), layers
