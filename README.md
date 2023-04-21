@@ -9,22 +9,13 @@ repo for generating randomly-distributed interlayer-bonded bilayer graphene stru
 
 * src 					=	source file directory that contains the following functions and scripts:
 
-	* mainscript.m 			= 	main MATLAB script
+* AA-stacked RD-IBG with f_{sp^{3}} = 10% (bottom-up):
+![botup1](https://github.com/afnanmostafa/Graphene-RD-IBG/blob/main/example/bottom-up/sample%202/rdibg21.png)
 
-	* generate_graphene.m 		= 	(function) generates graphene sheets (can also generate multi-layer graphene, i.e. 100 layers)
+* AB-stacked RD-IBG with f_{sp^{3}} = 45% (top-down):
+![topdown1](https://github.com/afnanmostafa/Graphene-RD-IBG/blob/main/example/top-down/bond_density_45/10x10_bd45_v1.png)
 
-	* readtextfile.m 			= 	(function) reads a file to get spatial information of atoms
-
-	* get_aligned_atoms.m 		= 	(function) gets aligned atoms from top and bottom layers
-
-	* gen_rand_bot.m 			= 	(function) selects random bonds from aligned atoms
-
-	* get_hydro.m 			= 	(function) gets coordinates of H for passivating interlayer bond-forming C atoms
-
-	* write_equil_lmps.m 		= 	(function) writes LAMMPS input script for generating interlayer bonds
-
-	* write_hydro_lmps.m 		= 	(function) writes the information of all passivating H
-
-	* delete_overlap_atoms.m 	= 	(function) delets overlapping atoms
+* ABAB....-stacked RD-IBFLG with f_{sp^{3}} = 5% (bottom-up):
+![flg1](https://github.com/afnanmostafa/Graphene-RD-IBG/blob/main/example/few-layer-graphene/20layers_equilibrated_v1.png)
 
 please contact/pull if you find any bugs or improvements or edge cases: afnanmostafa102@gmail.com
