@@ -1,15 +1,15 @@
 # Graphene RD-IBG (Randomly Distributed Interlayer-bonded Bilayer Graphene)
-### Afnan Mostafa (MS student at UMass Amherst)
+#### Afnan Mostafa
 
-repo for generating randomly-distributed interlayer-bonded bilayer graphene structures
+Repo for generating randomly-distributed interlayer-bonded bilayer graphene structures
 
-## Files/Folders:
+## Folders:
 
 * example 					= 	directory for example data files generated for LAMMPS
 
 * src 					=	source file directory that contains the following functions and scripts:
 
-## samples:
+## Samples:
 
 **AA-stacked RD-IBG with f_{sp^{3}} = 10% (bottom-up):**
 ![botup1](https://github.com/afnanmostafa/Graphene-RD-IBG/blob/main/example/bottom-up/sample%202/rdibg21.png)
