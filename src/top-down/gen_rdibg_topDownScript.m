@@ -10,7 +10,7 @@ close all
 
 %% %%% reading the data file and storing spatial coordinate values %%% %%
 layers = 2;
-stackings = "ab";
+stackings = "aa";
 lengths = 10;
 widths = 10;
 stackings = lower(stackings);
@@ -110,7 +110,7 @@ for h=1:length(lengths)
             end
             
             %% top-down from diamane to rd-ibg
-            bond_density = 5;
+            bond_density = 1.25;
             bonddens_remove = 50-bond_density;
             bonddens_remove = bonddens_remove*2;
             bonddens_frac = bonddens_remove/100;
@@ -171,71 +171,135 @@ for h=1:length(lengths)
             hydrogented_C_list_top = unique(hydrogented_C_list_top);
             
             %% %%% writing LAMMPS input script for C-C atoms to be moved towards each other in order to be bonded %%% %%
-            finalfilename = 'RDIBG_%s_%dlayers_%dx%d_%.2f_BD.data';
+            finalfilename = 'RDIBG_%s_%dlayers_%dnmx%dnm_%.2fBD.data';
             finalfile = sprintf(finalfilename,stackings(idx),layers,length_sheet,width_sheet,final_bd);
             
-            script = 'in_%s_%dx%d.lmp';
-            fid2 = sprintf(script, stackings(idx),length_sheet,width_sheet);
+            script = 'in_%s_%dnmx%dnm_%0.2fBD.lmp';
+            fid2 = sprintf(script, stackings(idx),length_sheet,width_sheet,bond_density);
             fid2 = fopen(fid2, 'w');
-            fprintf(fid2, '#RD-IBG from 2D diamond (top-down)\n\n');
-            fprintf(fid2,'dimension 3\n');
-            fprintf(fid2,'units metal\n');
-            fprintf(fid2,'processors * * 1\n');
-            fprintf(fid2,'boundary p p p\n');
-            fprintf(fid2,'neighbor 0.3 bin\n');
-            fprintf(fid2,'neigh_modify every 1 delay 0 check yes\n\n');
-            fprintf(fid2,'#define variables\n');
-            fprintf(fid2,'variable T equal 300.0\n');
-            fprintf(fid2,'variable V equal lx*ly*6.7  # 3.35 (1st layer) + gap (0) + 3.35 (2nd layer)\n');
-            fprintf(fid2,'variable dt equal 0.0001\n\n');
-            fprintf(fid2,'#lattice\n');
-            fprintf(fid2,'atom_style atomic\n');
-            fprintf(fid2,'read_data %s\n\n',finalfile);
-            fprintf(fid2,'#define interatomic potentials\n');
-            fprintf(fid2,'pair_style			airebo 3 1 0\n'); %LJ on (1), torsion off (0)
-            fprintf(fid2,'pair_coeff 			* * CH.airebo C C H\n\n');
-            fprintf(fid2,'dump equil all xyz 1000 equilibration.xyz\n');
-            fprintf(fid2,'dump_modify equil sort id\n\n');
-            fprintf(fid2,'#define thermo variable settings\n');
-            fprintf(fid2,'timestep ${dt}\n\n');
-            fprintf(fid2,'#### BOND FORMATION ####\n\n');
-            fprintf(fid2,'group atom1 id \t');
+            fprintf(fid2, '########### Prepare: RD-IBG (%0.2f%% bond density, %s) from 2D diamond (top-down) ###########',bond_density,stackings);
+            fprintf(fid2,'\n\n');
+            
+            fprintf(fid2,'###============= simulation setup =============###\n\n');
+            fprintf(fid2,'units         metal\n');
+            fprintf(fid2,'dimension     3\n');
+            fprintf(fid2,'boundary      p p p\n');
+            fprintf(fid2,'processors    * * 1\n\n');
+            
+            fprintf(fid2,'###============= neighbor list build-up settings =============###\n\n');
+            fprintf(fid2,'neighbor      2.0 bin\n');
+            fprintf(fid2,'neigh_modify  every 1 delay 0 check yes\n\n');
+            
+            fprintf(fid2,'###============= timestep size in ps =============###\n\n');
+            fprintf(fid2,'timestep      0.0001\n');
+            fprintf(fid2,'variable      dt equal 0.0001\n\n');
+            
+            fprintf(fid2,'###============= temp and seed variables =============###\n\n');
+            fprintf(fid2,'variable      ini_temp equal 10.0\n');
+            fprintf(fid2,'variable      eq_temp equal 300.0\n');
+            fprintf(fid2,'variable      st_temp equal 300.0\n');
+            fprintf(fid2,'variable      velSeed equal 42618127\n\n');
+            
+            fprintf(fid2,'###============= data file =============###\n\n');
+            fprintf(fid2,'atom_style	atomic\n');
+            fprintf(fid2,'read_data       %s',finalfile);
+            fprintf(fid2,'\n\n');
+            fprintf(fid2,'###============= potential file information =============###\n\n');
+            fprintf(fid2,'pair_style	airebo 3 1 1\n');
+            fprintf(fid2,'pair_coeff 	* * CH.airebo C C H\n\n');
+            
+            fprintf(fid2,'###============= stress characterization =============###\n\n');
+            fprintf(fid2,'group         hydro type 3\n');
+            fprintf(fid2,'group         carbon type 1 2\n\n');
+            fprintf(fid2,'compute       1 all stress/atom NULL\n');
+            fprintf(fid2,'compute       2 all reduce sum c_1[1] c_1[2] c_1[4]\n\n');
+            fprintf(fid2,'compute       3 all displace/atom\n');
+            fprintf(fid2,'compute       4 carbon coord/atom cutoff 1.7 group all\n');
+            fprintf(fid2,'compute       5 hydro coord/atom cutoff 1.3 group carbon \n\n');
+            fprintf(fid2,'variable      Devery equal 10\n');
+            fprintf(fid2,'variable      Drepeat equal 500\n');
+            fprintf(fid2,'variable      Dfreq equal "(v_Devery*v_Drepeat)"\n\n');
+            
+            fprintf(fid2,'###============= dump =============###\n\n');
+            fprintf(fid2,'variable      svm atom sqrt((((c_1[1]-c_1[2])^2+(c_1[2]-c_1[3])^2+(c_1[3]-c_1[1])^2)+6*(c_1[4]^2+c_1[5]^2+c_1[6]^2))/2)\n\n');
+            fprintf(fid2,'fix           avgs1 all ave/atom ${Devery} ${Drepeat} ${Dfreq} v_svm c_1[*] c_3[*] c_4 c_5\n\n');
+            fprintf(fid2,'dump          mini all custom ${Dfreq} minimize.xyz id type x y z v_svm f_avgs1[*]\n');
+            fprintf(fid2,'dump_modify   mini sort id\n\n');
+            
+            fprintf(fid2,'group         atom1 id \t');
             
             if strcmpi(stackings(idx), "ab")
                 fprintf(fid2, '%d ',set);
                 fprintf(fid2,'\n\n');
-                fprintf(fid2,'group atom2 id \t');
+                fprintf(fid2,'group         atom2 id \t');
                 fprintf(fid2, '%d ',set1);
                 
             elseif strcmpi(stackings(idx), "aa")
                 fprintf(fid2, '%d ',set);
                 fprintf(fid2,'\n\n');
-                fprintf(fid2,'group atom2 id \t');
+                fprintf(fid2,'group         atom2 id \t');
                 fprintf(fid2, '%d ',set1);
             end
             
             fprintf(fid2,'\n\n');
+            fprintf(fid2,'thermo        100\n\n');
             fprintf(fid2,'displace_atoms atom1 move 0 0 1.15 units box\n');
             fprintf(fid2,'displace_atoms atom2 move 0 0 -1.15 units box\n\n');
-            fprintf(fid2,'run 2000\n\n');
-            fprintf(fid2,'group bonded union atom1 atom2\n');
-            fprintf(fid2,'group nonbonded subtract all bonded\n\n');
+            fprintf(fid2,'run 1000\n\n');
+            
             fprintf(fid2,'thermo_style  custom step time temp press pxx pyy pzz pe ke etotal\n');
-            fprintf(fid2,'thermo    1000\n\n');
-            fprintf(fid2,'# ======= minimization =======\n\n');
-            fprintf(fid2,'min_style cg\n');
-            fprintf(fid2,'minimize  1e-10 1e-10 200000 400000\n\n');
-            fprintf(fid2,'write_data post_mini.data\n\n');
-            fprintf(fid2,'# ======= equilibration =======\n\n');
-            fprintf(fid2,'fix 2 all recenter INIT INIT INIT\n\n');
-            fprintf(fid2,'fix 1 nonbonded npt temp $T $T 0.1 x 0.0 0.0 1.0 y 0.0 0.0 1.0 couple xy\n');
-            fprintf(fid2,'run 150000\n');
-            fprintf(fid2,'unfix 1\n\n');
-            fprintf(fid2,'fix 1 all npt temp $T $T 0.1 x 0.0 0.0 1.0 y 0.0 0.0 1.0 couple xy\n');
-            fprintf(fid2,'run 200000\n');
-            fprintf(fid2,'unfix 1\n');
-            fprintf(fid2,'unfix 2\n\n');
-            fprintf(fid2,'write_data post_equil.data\n');
+            fprintf(fid2,'thermo        1000\n\n');
+            
+            fprintf(fid2,'###============= minimization =============###\n\n');
+            fprintf(fid2,'min_style		cg\n');
+            fprintf(fid2,'minimize		0 1e-5 200000 200000\n\n');
+            
+            fprintf(fid2,'min_style		cg\n');
+            fprintf(fid2,'fix 			1 all box/relax x 0.0 y 0.0 z 0.0 couple xyz\n');
+            fprintf(fid2,'minimize		0 1e-8 200000 200000\n');
+            fprintf(fid2,'unfix			1\n\n');
+            
+            fprintf(fid2,'write_data    post_cg1.data\n\n');
+            
+            fprintf(fid2,'write_dump    all atom dump1.atom\n');
+            fprintf(fid2,'displace_atoms all random 0.05 0.05 0.05 91897\n');
+            fprintf(fid2,'write_dump    all atom dump2.atom\n\n');
+            
+            fprintf(fid2,'min_style		cg\n');
+            fprintf(fid2,'fix 			1 all box/relax x 0.0 y 0.0 z 0.0 couple xyz\n');
+            fprintf(fid2,'minimize		0 1e-8 200000 200000\n');
+            fprintf(fid2,'unfix			1\n\n');
+            
+            fprintf(fid2,'write_data    post_cg2.data\n\n');
+            fprintf(fid2,'write_restart minimized_struc.restart\n\n');
+            
+            fprintf(fid2,'###============= velocity distribution =============###\n\n');
+            fprintf(fid2,'velocity      all create ${ini_temp} ${velSeed} mom yes rot yes dist gaussian units box\n\n');
+            fprintf(fid2,'###============= equilibration =============###\n\n');
+            fprintf(fid2,'thermo        1000\n\n');
+            
+            fprintf(fid2,'fix           NPT all npt temp ${ini_temp} ${ini_temp} 0.01 x 0.0 0.0 0.1 y 0.0 0.0 0.1 drag 2.0\n');
+            fprintf(fid2,'run           100000\n');
+            fprintf(fid2,'unfix         NPT\n\n');
+            
+            fprintf(fid2,'fix           NPT all npt temp ${ini_temp} ${eq_temp} 0.01 x 0.0 0.0 0.5 y 0.0 0.0 0.5 drag 2.0\n');
+            fprintf(fid2,'run           120000\n');
+            fprintf(fid2,'unfix         NPT\n\n');
+            
+            fprintf(fid2,'fix           NPT all npt temp ${eq_temp} ${eq_temp} 0.01 x 0.0 0.0 0.1 y 0.0 0.0 0.1 drag 2.0\n');
+            fprintf(fid2,'run           100000\n');
+            fprintf(fid2,'unfix         NPT\n\n');
+            
+            fprintf(fid2,'fix           1 all nvt temp ${st_temp} ${st_temp} $(100.0*dt) drag 2.0\n');
+            fprintf(fid2,'run           100000\n');
+            fprintf(fid2,'unfix         1\n\n');
+            
+            fprintf(fid2,'undump        mini\n');
+            fprintf(fid2,'unfix         avgs1\n\n');
+            
+            fprintf(fid2,'write_data    post_equil.data\n\n');
+            fprintf(fid2,'write_restart relaxed_struc.restart\n\n');
+            fprintf(fid2,'print "Minimization + Equilibration DONE"\n');
             fclose(fid2);
             
             %% %%% data file including the H atoms (No C atoms in this data file) %%% %%
@@ -307,7 +371,7 @@ for h=1:length(lengths)
                 str = sprintf("rm %s %s'",outfile,file);
                 command = (str);
                 system(command);
-
+                
                 clearvars -except g h idx stackings lengths widths layers
             end
         end
